@@ -1,0 +1,21 @@
+{
+  "session_id": "889b9f03-a8ae-4eba-b467-c52e31e1275f",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hello"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello sir, I'm ready to assist you. What can I do for you today?"
+    },
+    {
+      "role": "user",
+      "content": "set a timer for 5 seconds"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm setting a 5-second timer for you, sir."
+    }
+  ]
+}

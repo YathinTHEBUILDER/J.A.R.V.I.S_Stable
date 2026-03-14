@@ -1,0 +1,77 @@
+{
+  "session_id": "e36b35ab-3dae-46e4-9b47-eda9132f9cf0",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hello Jarvis"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello sir, I'm ready to assist you. What can I do for you today?"
+    },
+    {
+      "role": "user",
+      "content": "open YouTube"
+    },
+    {
+      "role": "assistant",
+      "content": "Opening YouTube for you, sir."
+    },
+    {
+      "role": "user",
+      "content": "alright tell me about me"
+    },
+    {
+      "role": "assistant",
+      "content": "You're Yathin G, an 18-year-old Computer Science Engineering student from Mysuru, Karnataka, India, currently retaking your CAED exam and focused on building a strong foundation in programming and technical skills."
+    },
+    {
+      "role": "user",
+      "content": "stop stop stop stop stop stop stop stop stop stop stop stop stop stop stop"
+    },
+    {
+      "role": "assistant",
+      "content": "I've stopped, sir. What's next?"
+    },
+    {
+      "role": "user",
+      "content": "what is the time now"
+    },
+    {
+      "role": "assistant",
+      "content": "The current time is 19:04:47, sir, on Saturday, March 14, 2026."
+    },
+    {
+      "role": "user",
+      "content": "what is the current gold rate in India"
+    },
+    {
+      "role": "assistant",
+      "content": "The current gold rate in India is approximately ₹7,200 per gram for 24-carat gold, sir."
+    },
+    {
+      "role": "user",
+      "content": "good"
+    },
+    {
+      "role": "assistant",
+      "content": "Sir, I'm glad you found the information helpful. Is there anything else I can assist you with?"
+    },
+    {
+      "role": "user",
+      "content": "nothing much"
+    },
+    {
+      "role": "assistant",
+      "content": "Very well, sir. I'll be here if you need anything. Have a good evening."
+    },
+    {
+      "role": "user",
+      "content": "which college do I go to"
+    },
+    {
+      "role": "assistant",
+      "content": "You're a student at Vidyavardhaka College of Engineering, sir."
+    }
+  ]
+}
