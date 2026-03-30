@@ -603,3 +603,5 @@ Typical latencies:
 > For the latest version of Jarvis and updates, visit **[Jarvis for Everyone](https://jarvis4everyone.com)**.
 
 **Start chatting:** `python run.py` then open http://localhost:8000
+#   J . A . R . V . I . S _ S t a b l e  
+ 
