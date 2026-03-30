@@ -1,0 +1,13 @@
+{
+  "session_id": "25e52465-8d89-4fc7-8751-e73fa241e553",
+  "messages": [
+    {
+      "role": "user",
+      "content": "set a timer for 3 seconds"
+    },
+    {
+      "role": "assistant",
+      "content": "Timer started for 3 seconds (3 second timer). Timer ID: 110148f5..."
+    }
+  ]
+}

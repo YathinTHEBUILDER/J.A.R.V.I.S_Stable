@@ -1,0 +1,29 @@
+{
+  "session_id": "cee9c9d2-a027-4872-b6cc-fa71d8ef623b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hi"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello sir, I'm ready to assist you. What can I do for you today?"
+    },
+    {
+      "role": "user",
+      "content": "what is the gold rate as of today"
+    },
+    {
+      "role": "assistant",
+      "content": "As of today, the gold rate in Dubai is approximately AED 623.00 per gram for 24-carat gold, and using the current exchange rate, it converts to around ₹1,52,111 per 10 grams in Indian Rupees."
+    },
+    {
+      "role": "user",
+      "content": "where do i live?"
+    },
+    {
+      "role": "assistant",
+      "content": "You live in Mysuru, Karnataka, India, sir."
+    }
+  ]
+}

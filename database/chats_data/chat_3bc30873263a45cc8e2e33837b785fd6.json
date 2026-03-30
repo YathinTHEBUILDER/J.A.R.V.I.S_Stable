@@ -1,0 +1,13 @@
+{
+  "session_id": "3bc30873-263a-45cc-8e2e-33837b785fd6",
+  "messages": [
+    {
+      "role": "user",
+      "content": "start stopwatch"
+    },
+    {
+      "role": "assistant",
+      "content": "Stopwatch started. ID: 81bdd123..."
+    }
+  ]
+}

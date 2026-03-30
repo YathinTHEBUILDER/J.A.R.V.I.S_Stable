@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Timer UI Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #050510; color: white; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #333; border-radius: 8px; }
+        .test-btn { padding: 10px 20px; margin: 5px; background: #7c6aef; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .test-btn:hover { background: #6b5adb; }
+        .result { margin: 10px 0; padding: 10px; background: #1a1a2e; border-radius: 5px; }
+        .success { color: #51cf65; }
+        .error { color: #ff6b6b; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Timer/Stopwatch/Alarm UI Test</h1>
+    
+    <div class="test-section">
+        <h2>Voice Commands Test</h2>
+        <button class="test-btn" onclick="testTimer()">Test Timer (5 sec)</button>
+        <button class="test-btn" onclick="testStopwatch()">Test Stopwatch</button>
+        <button class="test-btn" onclick="testAlarm()">Test Alarm</button>
+        <div id="voice-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>UI Elements Test</h2>
+        <button class="test-btn" onclick="testUI()">Open Main UI</button>
+        <button class="test-btn" onclick="testTimerPanel()">Test Timer Panel</button>
+        <div id="ui-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Live Updates Test</h2>
+        <button class="test-btn" onclick="testLiveUpdates()">Start Live Timer</button>
+        <div id="live-timer">00:00</div>
+        <div id="live-results"></div>
+    </div>
+
+    <script>
+        async function testCommand(message, resultsId) {
+            const resultsDiv = document.getElementById(resultsId);
+            resultsDiv.innerHTML += `<div class="result">Testing: "${message}"...</div>`;
+            
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultsDiv.innerHTML += `<div class="result success">✅ ${data.response}</div>`;
+                    return data;
+                } else {
+                    resultsDiv.innerHTML += `<div class="result error">❌ Error: ${response.status}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="result error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+        
+        function testTimer() {
+            testCommand('set a timer for 5 seconds', 'voice-results');
+        }
+        
+        function testStopwatch() {
+            testCommand('start stopwatch', 'voice-results');
+        }
+        
+        function testAlarm() {
+            testCommand('set alarm for 9:00 PM', 'voice-results');
+        }
+        
+        function testUI() {
+            window.open('/app/', '_blank');
+            document.getElementById('ui-results').innerHTML += 
+                '<div class="result success">✅ Main UI opened in new tab</div>';
+        }
+        
+        function testTimerPanel() {
+            // This would test the timer panel functionality
+            document.getElementById('ui-results').innerHTML += 
+                '<div class="result">📋 Timer Panel: Check main UI for clock icon button</div>';
+        }
+        
+        let timerInterval;
+        function testLiveUpdates() {
+            const timerDiv = document.getElementById('live-timer');
+            let seconds = 5;
+            
+            timerDiv.textContent = formatTime(seconds);
+            
+            // Start countdown
+            timerInterval = setInterval(() => {
+                seconds--;
+                timerDiv.textContent = formatTime(seconds);
+                
+                if (seconds <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('live-results').innerHTML += 
+                        '<div class="result success">🔔 Timer completed!</div>';
+                    // Play notification sound
+                    try {
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification('Timer Completed!', {
+                                body: 'Your 5-second timer has finished!',
+                                icon: '/favicon.ico'
+                            });
+                        }
+                    } catch (e) {
+                        console.log('Notification not available');
+                    }
+                }
+            }, 1000);
+            
+            document.getElementById('live-results').innerHTML += 
+                '<div class="result">⏱️ Live timer started...</div>';
+        }
+        
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "session_id": "9d0c8049-83b0-4379-9194-6a38d757f373",
+  "messages": [
+    {
+      "role": "user",
+      "content": "stop stopwatch"
+    },
+    {
+      "role": "assistant",
+      "content": "Stopwatch stopped. Elapsed: 3.76 seconds"
+    }
+  ]
+}

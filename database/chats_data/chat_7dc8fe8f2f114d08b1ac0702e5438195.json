@@ -1,0 +1,13 @@
+{
+  "session_id": "7dc8fe8f-2f11-4d08-b1ac-0702e5438195",
+  "messages": [
+    {
+      "role": "user",
+      "content": "alarm at 8:30 AM"
+    },
+    {
+      "role": "assistant",
+      "content": "Alarm set for 08:30 AM. ID: 0674bed1..."
+    }
+  ]
+}

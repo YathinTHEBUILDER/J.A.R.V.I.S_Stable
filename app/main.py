@@ -66,13 +66,9 @@ STARTUP:
 # =============================================================================
 # Each import is explained below so learners understand *why* it is here.
 
-import os
-import subprocess
-import sys
-import uuid
-import webbrowser
+# pathlib.Path — object-oriented filesystem paths.  Used to locate the
+# frontend/ directory relative to this file (see _frontend_dir near the end).
 from pathlib import Path
-from typing import Dict
 
 # FastAPI — the web framework itself.
 # HTTPException — raises an HTTP error (e.g. 400, 429, 503) that FastAPI
@@ -110,12 +106,34 @@ from contextlib import asynccontextmanager
 # HTTP requests to our FastAPI app.  Only used at the very bottom in run().
 import uvicorn
 
+# logging — Python's standard logging library.  We create one logger named
+# "J.A.R.V.I.S" and use it throughout this file (and it's the logger you
+# see in the terminal when the server is running).
 import logging
+
+# json — serialise Python dicts to JSON strings for SSE `data:` payloads.
 import json
+
+# time — time.perf_counter() gives high-resolution timestamps for measuring
+# how long operations take (startup timing, request duration).
 import time
+
+# re — regular expressions.  Used by _split_sentences() to break text at
+# punctuation boundaries (periods, commas, etc.) for inline TTS.
 import re
+
+# base64 — encode raw MP3 bytes as ASCII text so they can be safely embedded
+# inside a JSON string in an SSE event.
 import base64
+
+# asyncio — needed by _generate_tts_sync() which runs a tiny one-shot async
+# event loop inside a synchronous function (because edge_tts is async but
+# the ThreadPoolExecutor calls sync functions).
 import asyncio
+
+# ThreadPoolExecutor — a pool of OS threads.  TTS generation is CPU- and
+# I/O-bound; we submit each sentence to the pool so multiple sentences can
+# be synthesised in parallel without blocking the main async event loop.
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
 # edge_tts — Microsoft Edge's free text-to-speech engine.  It streams MP3
@@ -123,18 +141,12 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeou
 # inline TTS pipeline inside _stream_generator.
 import edge_tts
 
-from app.models import (
-    ChatRequest,
-    ChatResponse,
-    TTSRequest,
-    SummaryResponse,
-    OpenAppRequest,
-    TimerCreateRequest,
-    TimerInfo,
-    StopwatchInfo,
-    AlarmCreateRequest,
-    AlarmInfo,
-)
+# Pydantic models defined in app/models.py.  They declare the shape of
+# request bodies and response bodies; FastAPI auto-validates against them.
+#   ChatRequest  — { message: str, session_id: str | None, tts: bool }
+#   ChatResponse — { response: str, session_id: str }
+#   TTSRequest   — { text: str }
+from app.models import ChatRequest, ChatResponse, TTSRequest
 
 
 # =============================================================================
@@ -213,7 +225,6 @@ from config import (
     EMBEDDING_MODEL, CHUNK_SIZE, CHUNK_OVERLAP, MAX_CHAT_HISTORY_TURNS,
     ASSISTANT_NAME, TTS_VOICE, TTS_RATE,
 )
-from app.utils.key_rotation import get_next_key_pair
 
 
 # =============================================================================
@@ -245,14 +256,6 @@ groq_service: GroqService = None
 realtime_service: RealtimeGroqService = None
 brain_service: BrainService = None
 chat_service: ChatService = None
-_vector_rebuild_lock = asyncio.Lock()
-
-# In-memory state for timers, stopwatches, and alarms.
-timers: Dict[str, dict] = {}
-timer_tasks: Dict[str, asyncio.Task] = {}
-stopwatches: Dict[str, dict] = {}
-alarms: Dict[str, dict] = {}
-alarm_tasks: Dict[str, asyncio.Task] = {}
 
 
 def print_title():
@@ -507,18 +510,7 @@ async def api_info():
             "/chat/jarvis/stream": "Jarvis unified route (brain classifies, streams)",
             "/chat/history/{session_id}": "Get chat history",
             "/health": "System health check",
-            "/tts": "Text-to-speech (POST text, returns streamed MP3)",
-            "/chat/history/{session_id}": "Get chat history",
-            "/chat/summarize/{session_id}": "Summarize a chat session",
-            "/vector/rebuild": "Rebuild vector store from learning_data and chats_data",
-            "/actions/open": "Open an app or URL on the host",
-            "/timer/start": "Start a countdown timer",
-            "/timer/{timer_id}": "Get timer status",
-            "/timer/{timer_id}/cancel": "Cancel a timer",
-            "/stopwatch/start": "Start a stopwatch",
-            "/stopwatch/{stopwatch_id}": "Get/stop a stopwatch",
-            "/alarm/create": "Create an alarm at a specific time",
-            "/alarm/{alarm_id}": "Get alarm status"
+            "/tts": "Text-to-speech (POST text, returns streamed MP3)"
         }
     }
 
@@ -1232,43 +1224,6 @@ async def get_chat_history(session_id: str):
         raise HTTPException(status_code=500, detail=f"Error retrieving history: {str(e)}")
 
 
-@app.post("/chat/summarize/{session_id}", response_model=SummaryResponse)
-async def summarize_chat(session_id: str):
-    """
-    Summarize the full conversation for a given session.
-
-    Uses the existing GroqService with the current chat history as context and
-    asks the model to produce a concise summary (3–6 sentences) of what has
-    happened in the conversation so far.
-    """
-    if not chat_service or not groq_service:
-        raise HTTPException(status_code=503, detail="Services not initialized")
-    if not chat_service.validate_session_id(session_id):
-        raise HTTPException(status_code=400, detail="Invalid session_id format")
-
-    try:
-        history = chat_service.format_history_for_llm(session_id, exclude_last=False)
-        if not history:
-            raise HTTPException(status_code=404, detail="No history for this session")
-
-        # Build a synthetic question that asks Groq to summarize the conversation.
-        question = (
-            "Summarize this entire conversation between the user and the assistant. "
-            "Be concise (3–6 sentences), capture key questions, answers, and decisions, "
-            "and do not add new information."
-        )
-
-        # Use key rotation helper for chat-only usage.
-        _, chat_idx = get_next_key_pair(len(GROQ_API_KEYS), need_brain=False)
-        summary_text = groq_service.get_response(question=question, chat_history=history, key_start_index=chat_idx)
-        return SummaryResponse(summary=summary_text, session_id=session_id)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("[API /chat/summarize] Error: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error summarizing chat: {str(e)}")
-
-
 # ============================================================================
 # TEXT-TO-SPEECH (STANDALONE ENDPOINT)
 # ============================================================================
@@ -1310,295 +1265,6 @@ async def text_to_speech(request: TTSRequest):
         generate(),
         media_type="audio/mpeg",
         headers={"Cache-Control": "no-cache"},
-    )
-
-
-@app.post("/vector/rebuild")
-async def rebuild_vector_store():
-    """
-    Rebuild the FAISS vector store from learning_data and chats_data at runtime.
-
-    This endpoint is useful after adding or updating files in database/learning_data/
-    or database/chats_data/ without restarting the server. It acquires a lock so
-    only one rebuild can run at a time.
-    """
-    if not vector_store_service:
-        raise HTTPException(status_code=503, detail="Vector store service not initialized")
-
-    if _vector_rebuild_lock.locked():
-        raise HTTPException(status_code=409, detail="Vector store rebuild already in progress")
-
-    try:
-        async with _vector_rebuild_lock:
-            t0 = time.perf_counter()
-            vector_store_service.create_vector_store()
-            elapsed = time.perf_counter() - t0
-            logger.info("[API /vector/rebuild] Vector store rebuilt in %.3fs", elapsed)
-            return {"status": "ok", "elapsed_seconds": round(elapsed, 3)}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("[API /vector/rebuild] Error rebuilding vector store: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error rebuilding vector store: {str(e)}")
-
-
-# ============================================================================
-# LOCAL ACTIONS: OPEN APP / TIMER / STOPWATCH / ALARM
-# ============================================================================
-
-@app.post("/actions/open")
-async def open_app(request: OpenAppRequest):
-    """
-    Open an application or URL on the host machine.
-
-    For URLs (http/https), uses the default browser. For apps/paths, attempts
-    to launch them using OS-specific mechanisms (os.startfile on Windows,
-    subprocess on others). Returns a simple status message.
-    """
-    target = request.target.strip()
-    if not target:
-        raise HTTPException(status_code=400, detail="Target is required")
-
-    try:
-        # URL: open in default browser.
-        if target.startswith(("http://", "https://")):
-            opened = webbrowser.open(target)
-            if not opened:
-                raise OSError("webbrowser.open reported failure")
-        else:
-            # Desktop application or file.
-            if sys.platform.startswith("win"):
-                # On Windows, try os.startfile first (handles .lnk, .exe, etc.).
-                try:
-                    os.startfile(target)  # type: ignore[attr-defined]
-                except OSError:
-                    # Fall back to subprocess; allow PATH resolution.
-                    args = [target] + (request.args or [])
-                    subprocess.Popen(args, shell=True)
-            else:
-                # POSIX: try to launch via subprocess; caller must pass full path or binary name in PATH.
-                args = [target] + (request.args or [])
-                subprocess.Popen(args)
-        return {"status": "ok", "message": f"Requested to open: {target}"}
-    except Exception as e:
-        logger.error("[ACTIONS /open] Failed to open %s: %s", target, e)
-        raise HTTPException(status_code=500, detail=f"Failed to open target: {str(e)}")
-
-
-@app.post("/timer/start", response_model=TimerInfo)
-async def start_timer(req: TimerCreateRequest):
-    """
-    Start a countdown timer. Returns a timer ID and its initial status.
-    """
-    timer_id = str(uuid.uuid4())
-    now = time.time()
-    ends_at = now + req.seconds
-    timers[timer_id] = {
-        "id": timer_id,
-        "label": req.label,
-        "seconds": req.seconds,
-        "started_at": now,
-        "ends_at": ends_at,
-        "status": "running",
-    }
-
-    async def _timer_worker(tid: str, duration: int):
-        try:
-            await asyncio.sleep(duration)
-            entry = timers.get(tid)
-            if entry and entry.get("status") == "running":
-                entry["status"] = "finished"
-                logger.info("[TIMER] Timer %s finished (%s)", tid, entry.get("label") or "")
-        except asyncio.CancelledError:
-            # Cancelled timers are simply left in whatever state they were put into.
-            logger.info("[TIMER] Timer %s cancelled", tid)
-
-    task = asyncio.create_task(_timer_worker(timer_id, req.seconds))
-    timer_tasks[timer_id] = task
-
-    return TimerInfo(
-        id=timer_id,
-        label=req.label,
-        seconds=req.seconds,
-        remaining_seconds=req.seconds,
-        status="running",
-        started_at=now,
-        ends_at=ends_at,
-    )
-
-
-@app.get("/timer/{timer_id}", response_model=TimerInfo)
-async def get_timer(timer_id: str):
-    """
-    Get the current status of a timer, including remaining seconds.
-    """
-    entry = timers.get(timer_id)
-    if not entry:
-        raise HTTPException(status_code=404, detail="Timer not found")
-    now = time.time()
-    if entry["status"] == "running":
-        remaining = max(0, int(entry["ends_at"] - now))
-    else:
-        remaining = 0
-    return TimerInfo(
-        id=entry["id"],
-        label=entry.get("label"),
-        seconds=entry["seconds"],
-        remaining_seconds=remaining,
-        status=entry["status"],
-        started_at=entry["started_at"],
-        ends_at=entry["ends_at"],
-    )
-
-
-@app.post("/timer/{timer_id}/cancel", response_model=TimerInfo)
-async def cancel_timer(timer_id: str):
-    """
-    Cancel a running timer.
-    """
-    entry = timers.get(timer_id)
-    if not entry:
-        raise HTTPException(status_code=404, detail="Timer not found")
-    entry["status"] = "cancelled"
-    task = timer_tasks.pop(timer_id, None)
-    if task:
-        task.cancel()
-    now = time.time()
-    remaining = max(0, int(entry["ends_at"] - now))
-    return TimerInfo(
-        id=entry["id"],
-        label=entry.get("label"),
-        seconds=entry["seconds"],
-        remaining_seconds=remaining,
-        status=entry["status"],
-        started_at=entry["started_at"],
-        ends_at=entry["ends_at"],
-    )
-
-
-@app.post("/stopwatch/start", response_model=StopwatchInfo)
-async def start_stopwatch(label: str | None = None):
-    """
-    Start a stopwatch. Returns its ID and initial status.
-    """
-    sw_id = str(uuid.uuid4())
-    now = time.time()
-    stopwatches[sw_id] = {
-        "id": sw_id,
-        "label": label,
-        "started_at": now,
-        "elapsed": 0.0,
-        "running": True,
-    }
-    return StopwatchInfo(
-        id=sw_id,
-        label=label,
-        running=True,
-        started_at=now,
-        elapsed_seconds=0.0,
-    )
-
-
-@app.post("/stopwatch/{stopwatch_id}/stop", response_model=StopwatchInfo)
-async def stop_stopwatch(stopwatch_id: str):
-    """
-    Stop a running stopwatch and return final elapsed time.
-    """
-    entry = stopwatches.get(stopwatch_id)
-    if not entry:
-        raise HTTPException(status_code=404, detail="Stopwatch not found")
-    if entry["running"]:
-        now = time.time()
-        entry["elapsed"] += now - entry["started_at"]
-        entry["running"] = False
-    return StopwatchInfo(
-        id=entry["id"],
-        label=entry.get("label"),
-        running=entry["running"],
-        started_at=entry["started_at"],
-        elapsed_seconds=float(entry["elapsed"]),
-    )
-
-
-@app.get("/stopwatch/{stopwatch_id}", response_model=StopwatchInfo)
-async def get_stopwatch(stopwatch_id: str):
-    """
-    Get current stopwatch status and elapsed time.
-    """
-    entry = stopwatches.get(stopwatch_id)
-    if not entry:
-        raise HTTPException(status_code=404, detail="Stopwatch not found")
-    elapsed = float(entry["elapsed"])
-    if entry["running"]:
-        elapsed += time.time() - entry["started_at"]
-    return StopwatchInfo(
-        id=entry["id"],
-        label=entry.get("label"),
-        running=entry["running"],
-        started_at=entry["started_at"],
-        elapsed_seconds=elapsed,
-    )
-
-
-@app.post("/alarm/create", response_model=AlarmInfo)
-async def create_alarm(req: AlarmCreateRequest):
-    """
-    Create an alarm at a specific local datetime (ISO 8601 string).
-    """
-    import datetime
-
-    try:
-        dt = datetime.datetime.fromisoformat(req.datetime_iso)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid datetime_iso format; expected ISO 8601")
-
-    now = datetime.datetime.now()
-    if dt <= now:
-        raise HTTPException(status_code=400, detail="Alarm time must be in the future")
-
-    delta = (dt - now).total_seconds()
-    alarm_id = str(uuid.uuid4())
-    alarms[alarm_id] = {
-        "id": alarm_id,
-        "label": req.label,
-        "scheduled_at": dt.timestamp(),
-        "status": "scheduled",
-    }
-
-    async def _alarm_worker(aid: str, delay: float):
-        try:
-            await asyncio.sleep(delay)
-            entry = alarms.get(aid)
-            if entry and entry.get("status") == "scheduled":
-                entry["status"] = "triggered"
-                logger.info("[ALARM] Alarm %s triggered (%s)", aid, entry.get("label") or "")
-        except asyncio.CancelledError:
-            logger.info("[ALARM] Alarm %s cancelled", aid)
-
-    task = asyncio.create_task(_alarm_worker(alarm_id, delta))
-    alarm_tasks[alarm_id] = task
-
-    return AlarmInfo(
-        id=alarm_id,
-        label=req.label,
-        scheduled_at=dt.timestamp(),
-        status="scheduled",
-    )
-
-
-@app.get("/alarm/{alarm_id}", response_model=AlarmInfo)
-async def get_alarm(alarm_id: str):
-    """
-    Get current alarm status.
-    """
-    entry = alarms.get(alarm_id)
-    if not entry:
-        raise HTTPException(status_code=404, detail="Alarm not found")
-    return AlarmInfo(
-        id=entry["id"],
-        label=entry.get("label"),
-        scheduled_at=entry["scheduled_at"],
-        status=entry["status"],
     )
 
 

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Timer Test</title>
+</head>
+<body>
+    <h1>Timer Test</h1>
+    <button onclick="testTimer()">Test Timer Command</button>
+    <button onclick="testUI()">Test Timer UI</button>
+    <div id="result"></div>
+    
+    <script>
+    async function testTimer() {
+        try {
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: 'set a timer for 10 seconds'})
+            });
+            const data = await response.json();
+            document.getElementById('result').innerHTML = `<p>Timer Response: ${data.response}</p>`;
+        } catch (error) {
+            document.getElementById('result').innerHTML = `<p>Error: ${error.message}</p>`;
+        }
+    }
+    
+    function testUI() {
+        const timerToggle = document.getElementById('timer-toggle');
+        const timerPanel = document.getElementById('timer-panel');
+        
+        if (timerToggle) {
+            document.getElementById('result').innerHTML += '<p>Timer toggle button found</p>';
+            timerToggle.click();
+        } else {
+            document.getElementById('result').innerHTML += '<p>Timer toggle button NOT found</p>';
+        }
+        
+        if (timerPanel) {
+            document.getElementById('result').innerHTML += '<p>Timer panel found</p>';
+        } else {
+            document.getElementById('result').innerHTML += '<p>Timer panel NOT found</p>';
+        }
+    }
+    </script>
+</body>
+</html>

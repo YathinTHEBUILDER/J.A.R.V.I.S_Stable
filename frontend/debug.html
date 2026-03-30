@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DEBUG - Timer Features</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #050510; color: white; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #333; border-radius: 8px; }
+        .test-btn { padding: 10px 20px; margin: 5px; background: #7c6aef; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .test-btn:hover { background: #6b5adb; }
+        .result { margin: 10px 0; padding: 10px; background: #1a1a2e; border-radius: 5px; font-family: monospace; }
+        .success { color: #51cf65; }
+        .error { color: #ff6b6b; }
+        .warning { color: #ffd93d; }
+    </style>
+</head>
+<body>
+    <h1>🔧 TIMER/STOPWATCH/ALARM DEBUG</h1>
+    
+    <div class="debug-section">
+        <h2>1. Server Connection Test</h2>
+        <button class="test-btn" onclick="testServer()">Test Server Health</button>
+        <div id="server-result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>2. Voice Command Test</h2>
+        <button class="test-btn" onclick="testTimer()">Test Timer (5 sec)</button>
+        <button class="test-btn" onclick="testStopwatch()">Test Stopwatch</button>
+        <button class="test-btn" onclick="testAlarm()">Test Alarm</button>
+        <div id="voice-result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>3. UI Element Test</h2>
+        <button class="test-btn" onclick="testUIElements()">Check UI Elements</button>
+        <div id="ui-result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>4. Live Timer Test</h2>
+        <button class="test-btn" onclick="startLiveTimer()">Start 10-Second Timer</button>
+        <div id="timer-display">00:00</div>
+        <div id="timer-result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>5. Sound Test</h2>
+        <button class="test-btn" onclick="testSound()">Test Notification Sound</button>
+        <div id="sound-result"></div>
+    </div>
+
+    <script>
+        // Test 1: Server Health
+        async function testServer() {
+            const resultDiv = document.getElementById('server-result');
+            resultDiv.innerHTML = '<div class="result">Testing server connection...</div>';
+            
+            try {
+                const response = await fetch('/health');
+                if (response.ok) {
+                    const health = await response.json();
+                    resultDiv.innerHTML = `<div class="result success">✅ Server Healthy<br>Status: ${health.status}<br>Services: ${Object.keys(health).join(', ')}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ Server Error: ${response.status}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Connection Failed: ${error.message}</div>`;
+            }
+        }
+        
+        // Test 2: Voice Commands
+        async function testCommand(message, resultId) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.innerHTML += `<div class="result">Testing: "${message}"</div>`;
+            
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML += `<div class="result success">✅ ${data.response}</div>`;
+                    return data;
+                } else {
+                    resultDiv.innerHTML += `<div class="result error">❌ HTTP Error: ${response.status}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="result error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+        
+        function testTimer() { testCommand('set a timer for 5 seconds', 'voice-result'); }
+        function testStopwatch() { testCommand('start stopwatch', 'voice-result'); }
+        function testAlarm() { testCommand('set alarm for 9:00 PM', 'voice-result'); }
+        
+        // Test 3: UI Elements
+        function testUIElements() {
+            const resultDiv = document.getElementById('ui-result');
+            const checks = [];
+            
+            // Check main UI elements
+            const timerToggle = document.getElementById('timer-toggle');
+            const timerPanel = document.getElementById('timer-panel');
+            const timerBadge = document.getElementById('timer-badge');
+            
+            if (timerToggle) checks.push('✅ Timer toggle button found');
+            else checks.push('❌ Timer toggle button NOT found');
+            
+            if (timerPanel) checks.push('✅ Timer panel found');
+            else checks.push('❌ Timer panel NOT found');
+            
+            if (timerBadge) checks.push('✅ Timer badge found');
+            else checks.push('❌ Timer badge NOT found');
+            
+            resultDiv.innerHTML = `<div class="result">${checks.join('<br>')}</div>`;
+        }
+        
+        // Test 4: Live Timer
+        let timerInterval;
+        function startLiveTimer() {
+            const display = document.getElementById('timer-display');
+            const resultDiv = document.getElementById('timer-result');
+            let seconds = 10;
+            
+            display.textContent = formatTime(seconds);
+            resultDiv.innerHTML = '<div class="result">⏱️ Timer started...</div>';
+            
+            timerInterval = setInterval(() => {
+                seconds--;
+                display.textContent = formatTime(seconds);
+                
+                if (seconds <= 0) {
+                    clearInterval(timerInterval);
+                    resultDiv.innerHTML += '<div class="result success">🔔 Timer completed!</div>';
+                    playNotificationSound();
+                }
+            }, 1000);
+        }
+        
+        // Test 5: Sound
+        function testSound() {
+            const resultDiv = document.getElementById('sound-result');
+            try {
+                playNotificationSound();
+                resultDiv.innerHTML = '<div class="result success">🔔 Sound notification played</div>';
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Sound failed: ${error.message}</div>`;
+            }
+        }
+        
+        function playNotificationSound() {
+            // Create a simple beep sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.value = 0.1;
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+        
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Auto-run server test on load
+        window.onload = () => {
+            testServer();
+        };
+    </script>
+</body>
+</html>

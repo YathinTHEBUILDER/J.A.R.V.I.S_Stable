@@ -1,0 +1,13 @@
+{
+  "session_id": "97f03b36-a36f-4db9-9caa-e10dba881740",
+  "messages": [
+    {
+      "role": "user",
+      "content": "stop stopwatch when none running"
+    },
+    {
+      "role": "assistant",
+      "content": "No running stopwatch found"
+    }
+  ]
+}

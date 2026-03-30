@@ -1,0 +1,45 @@
+{
+  "session_id": "637acd98-9260-4c6f-bfc3-d3b295b95589",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hello"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello sir, I'm ready to assist you. What can I do for you today?"
+    },
+    {
+      "role": "user",
+      "content": "set a stopwatch"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm setting a stopwatch for you, sir."
+    },
+    {
+      "role": "user",
+      "content": "the stopwatch and the timer poster on work and none of the changes are actually been made I told you to remove the buffer words which you haven't"
+    },
+    {
+      "role": "assistant",
+      "content": "I will remove buffer words and provide direct responses from now on, sir. Your stopwatch is set."
+    },
+    {
+      "role": "user",
+      "content": "what is the time"
+    },
+    {
+      "role": "assistant",
+      "content": "The current time is 19:43:42, sir."
+    },
+    {
+      "role": "user",
+      "content": "start stopwatch"
+    },
+    {
+      "role": "assistant",
+      "content": "Stopwatch started, sir."
+    }
+  ]
+}

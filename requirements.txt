@@ -1,16 +1,3 @@
-fastapi
-uvicorn
-python-dotenv
-edge-tts
-langchain-core
-langchain-groq
-langchain-text-splitters
-langchain-huggingface
-langchain-community
-sentence-transformers
-faiss-cpu
-tavily-python
-
 # Web framework & server
 fastapi>=0.100.0,<1.0
 uvicorn[standard]>=0.22.0

@@ -143,18 +143,6 @@ class ChatHistory(BaseModel):
     messages: List[ChatMessage]
 
 
-class SummaryResponse(BaseModel):
-    """
-    Response model for conversation summary endpoints.
-
-    Fields:
-        summary:    Concise natural-language summary of a chat session.
-        session_id: The session that was summarized.
-    """
-    summary: str
-    session_id: str
-
-
 class TTSRequest(BaseModel):
     """
     Request body for POST /tts. Contains the text to convert to speech.
@@ -165,77 +153,3 @@ class TTSRequest(BaseModel):
               would be slow and consume unnecessary resources.
     """
     text: str = Field(..., min_length=1, max_length=5000)
-
-
-# =============================================================================
-# LOCAL ACTION / UTILITY MODELS
-# =============================================================================
-
-class OpenAppRequest(BaseModel):
-    """
-    Request body for opening an application or URL on the host machine.
-
-    Fields:
-        target: Name/path of the app or a URL.
-        args:   Optional list of extra arguments for apps (ignored for URLs).
-    """
-    target: str = Field(..., min_length=1, max_length=300)
-    args: Optional[List[str]] = None
-
-
-class TimerCreateRequest(BaseModel):
-    """
-    Create a simple countdown timer.
-
-    Fields:
-        seconds: Duration in seconds (must be > 0).
-        label:   Optional human-readable label.
-    """
-    seconds: int = Field(..., gt=0, le=24 * 60 * 60)
-    label: Optional[str] = Field(None, max_length=100)
-
-
-class TimerInfo(BaseModel):
-    """
-    Timer status representation.
-    """
-    id: str
-    label: Optional[str]
-    seconds: int
-    remaining_seconds: int
-    status: str
-    started_at: float
-    ends_at: float
-
-
-class StopwatchInfo(BaseModel):
-    """
-    Stopwatch status representation.
-    """
-    id: str
-    label: Optional[str]
-    running: bool
-    started_at: Optional[float]
-    elapsed_seconds: float
-
-
-class AlarmCreateRequest(BaseModel):
-    """
-    Create an alarm at a specific local datetime.
-
-    Fields:
-        datetime_iso: Local datetime in ISO 8601 format (e.g. '2026-03-14T08:30:00').
-        label:        Optional human-readable label.
-    """
-    datetime_iso: str = Field(..., min_length=10, max_length=40)
-    label: Optional[str] = Field(None, max_length=100)
-
-
-class AlarmInfo(BaseModel):
-    """
-    Alarm status representation.
-    """
-    id: str
-    label: Optional[str]
-    scheduled_at: float
-    status: str

@@ -1,0 +1,37 @@
+{
+  "session_id": "914fe984-6cf9-4706-8523-706d732674e0",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hi"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello sir, I'm ready to assist you. What can I do for you today?"
+    },
+    {
+      "role": "user",
+      "content": "start timer"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm setting a timer for you, sir."
+    },
+    {
+      "role": "user",
+      "content": "stop timer"
+    },
+    {
+      "role": "assistant",
+      "content": "Timer stopped, sir."
+    },
+    {
+      "role": "user",
+      "content": "stop"
+    },
+    {
+      "role": "assistant",
+      "content": "Already stopped, sir."
+    }
+  ]
+}
